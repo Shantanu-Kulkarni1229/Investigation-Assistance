@@ -3,6 +3,9 @@ import sendEmail from "../utils/sendEmail.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+
+const otpStore = new Map();
+
 /**
  * @desc Signup - Create new user and send OTP
  * @route POST /api/auth/signup
@@ -17,31 +20,27 @@ export const signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Generate OTP
+    // Always generate a NEW OTP and overwrite old if exists
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
 
-    // Create new user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      otp,
-      otpExpires: Date.now() + 10 * 60 * 1000, // 10 min expiry
-    });
+    // Save or update entry in otpStore
+    otpStore.set(email, { name, password, otp, expiresAt });
 
     // Send OTP via email
-    await sendEmail(email, "Email Verification OTP", `Your OTP is: ${otp}`);
+    const htmlContent = generateOTPEmail(otp);
+    await sendEmail(email, "Email Verification OTP", htmlContent);
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: "Signup successful. OTP sent to email for verification.",
-      userId: user._id,
+      message: "New OTP sent to email. Please verify to complete signup.",
     });
   } catch (error) {
     console.error("❌ Signup Error:", error);
     res.status(500).json({ message: "Server error during signup" });
   }
 };
+
 
 /**
  * @desc Verify OTP
@@ -53,33 +52,44 @@ export const signup = async (req, res) => {
  */
 export const verifySignupOTP = async (req, res) => {
   try {
-    const { userId, otp } = req.body;
+    const { email, otp } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    if (user.isVerified) {
-      return res.status(400).json({ message: "User already verified" });
+    const record = otpStore.get(email);
+    if (!record) {
+      return res.status(404).json({ message: "No OTP request found for this email" });
     }
 
-    if (user.otp !== otp || Date.now() > user.otpExpires) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    if (Date.now() > record.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: "OTP has expired" });
     }
 
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpires = null;
-    await user.save();
+    if (record.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
 
-    res.status(200).json({
+    // Create user now
+    const user = await User.create({
+      name: record.name,
+      email,
+      password: record.password,
+      isVerified: true,
+    });
+
+    // Cleanup
+    otpStore.delete(email);
+
+    res.status(201).json({
       success: true,
-      message: "Signup verification successful. You can now log in.",
+      message: "OTP verified. Signup complete.",
+      userId: user._id,
     });
   } catch (error) {
-    console.error("❌ Signup OTP Verification Error:", error);
+    console.error("❌ OTP Verification Error:", error);
     res.status(500).json({ message: "Server error during OTP verification" });
   }
 };
+
 
 /**
  * @desc Verify Login OTP and return JWT
@@ -142,8 +152,8 @@ export const login = async (req, res) => {
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 min
     await user.save();
 
-    // Send OTP email
-    await sendEmail(user.email, "Login Verification OTP", `Your OTP is: ${otp}`);
+    const htmlContent = generateOTPEmail(otp);
+    await sendEmail(email, "Email Verification OTP", htmlContent);
 
     res.status(200).json({
       success: true,
@@ -175,8 +185,9 @@ export const forgotPassword = async (req, res) => {
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 min
     await user.save();
 
-    await sendEmail(user.email, "Password Reset OTP", `Your OTP is: ${otp}`);
-
+const htmlContent = generateOTPEmail(otp);
+    await sendEmail(email, "Email Verification OTP", htmlContent);
+    
     res.status(200).json({
       success: true,
       message: "OTP sent to email for password reset",
@@ -239,3 +250,19 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ message: "Server error during password reset" });
   }
 };
+
+
+const generateOTPEmail = (otp) => `
+  <div style="font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+      <h2 style="color: #004aad;">🔐 Password Reset OTP</h2>
+      <p>Hello,</p>
+      <p>Your OTP for Email Verifictaion is:</p>
+      <p style="font-size: 24px; font-weight: bold; color: #d62828;">${otp}</p>
+      <p>This OTP is valid for the next 10 minutes. Please do not share it with anyone.</p>
+      <hr style="margin: 20px 0;" />
+      <p style="font-size: 12px; color: #999;">If you did not request a password reset, please ignore this email.</p>
+      <p style="font-size: 12px; color: #999;">— Maharashtra Police</p>
+    </div>
+  </div>
+`;

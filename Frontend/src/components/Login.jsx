@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import API from "../api";
 import { useNavigate, Link } from "react-router-dom";
+import { FaEnvelope, FaLock, FaKey, FaArrowLeft, FaRedo } from "react-icons/fa";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Logo from "../assets/logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -8,78 +12,178 @@ export default function Login() {
   const [userId, setUserId] = useState(null);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1); // 1 = login form, 2 = OTP
+  const [isLoading, setIsLoading] = useState(false);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+
+  // Clear OTP field when step changes
+  useEffect(() => {
+    if (step === 2) {
+      setOtp("");
+      startCountdown();
+    }
+  }, [step]);
+
+  // Countdown for resend OTP
+  useEffect(() => {
+    if (countdown > 0 && resendDisabled) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setResendDisabled(false);
+    }
+  }, [countdown, resendDisabled]);
+
+  const startCountdown = () => {
+    setCountdown(30);
+    setResendDisabled(true);
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Handle Login Submit
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const res = await API.post("/auth/login", form);
       setUserId(res.data.userId);
-      setStep(2); // Go to OTP screen
+      setStep(2);
+      toast.success("OTP sent to your email! / OTP तुमच्या ईमेलवर पाठवला आहे!", {
+        position: "top-center",
+        autoClose: 5000,
+      });
     } catch (error) {
-      alert(error.response?.data?.message || "Login failed");
+      toast.error(error.response?.data?.message || "Login failed / लॉगिन अयशस्वी", {
+        position: "top-center",
+        autoClose: 5000,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle OTP Verification
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const res = await API.post("/auth/verify-login-otp", { userId, otp });
-      
-      // Store JWT token in localStorage
       localStorage.setItem("token", res.data.token);
-
-      alert("Login successful!");
-      navigate("/profile");
+      toast.success("Login successful! / लॉगिन यशस्वी!", {
+        position: "top-center",
+        autoClose: 3000,
+        onClose: () => navigate("/home"),
+      });
     } catch (error) {
-      alert(error.response?.data?.message || "OTP verification failed");
+      toast.error(error.response?.data?.message || "OTP verification failed / OTP सत्यापन अयशस्वी", {
+        position: "top-center",
+        autoClose: 5000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      await API.post("/auth/login", form); // Same endpoint as initial login
+      startCountdown();
+      toast.success("New OTP sent! / नवीन OTP पाठवला आहे!", {
+        position: "top-center",
+        autoClose: 5000,
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to resend OTP / OTP पुन्हा पाठवणे अयशस्वी", {
+        position: "top-center",
+        autoClose: 5000,
+      });
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
+    <div className="flex justify-center items-center min-h-screen bg-white">
+      <ToastContainer />
+      <div className="border-2 border-blue-600 p-8 rounded-xl shadow-lg w-full max-w-md mx-4">
+        {/* Logo/Header */}
+        <div className="text-center mb-6">
+          <div className="mx-auto w-24 h-24 mb-3">
+            <img src={Logo} alt="Maharashtra Police Logo" className="w-full h-full object-contain" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800">Maharashtra Police / महाराष्ट्र पोलीस</h1>
+          <p className="text-blue-600 font-medium">Investigation Assistant / चौकशी सहाय्यक</p>
+        </div>
+
         {step === 1 && (
           <>
-            <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
+            <h2 className="text-xl font-bold mb-6 text-center text-gray-700">
+              Login / लॉगिन
+            </h2>
             <form onSubmit={handleLogin} className="space-y-4">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={form.password}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaEnvelope className="text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email / ईमेल"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaLock className="text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password / पासवर्ड"
+                  value={form.password}
+                  onChange={handleChange}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                disabled={isLoading}
+                className={`w-full py-3 px-4 rounded-lg font-medium text-white ${
+                  isLoading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+                } transition-colors flex justify-center items-center`}
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing... / प्रक्रिया करत आहे...
+                  </>
+                ) : (
+                  `Login / लॉगिन`
+                )}
               </button>
             </form>
-            {/* Forgot Password Link */}
-            <div className="text-center mt-4">
+
+            <div className="mt-4 text-center space-y-3">
+              <p className="text-gray-600">
+                Don't have an account? / खाते नाही?{" "}
+                <Link to="/signup" className="text-blue-600 hover:text-blue-800 font-medium">
+                  Sign Up / नोंदणी करा
+                </Link>
+              </p>
               <Link
                 to="/forgot-password"
-                className="text-blue-500 hover:underline"
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm"
               >
-                Forgot Password?
+                Forgot Password? / पासवर्ड विसरलात?
               </Link>
             </div>
           </>
@@ -87,22 +191,71 @@ export default function Login() {
 
         {step === 2 && (
           <>
-            <h2 className="text-2xl font-bold mb-4 text-center">Verify OTP</h2>
+            <button
+              onClick={() => setStep(1)}
+              className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            >
+              <FaArrowLeft className="mr-1" /> Back / मागे
+            </button>
+            
+            <h2 className="text-xl font-bold mb-6 text-center text-gray-700">
+              Verify OTP / OTP सत्यापित करा
+            </h2>
+            <p className="text-gray-600 text-center mb-6">
+              Enter the OTP sent to your email / तुमच्या ईमेलवर पाठवलेला OTP प्रविष्ट करा
+            </p>
+            
             <form onSubmit={handleVerifyOTP} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaKey className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Enter OTP / OTP प्रविष्ट करा"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                  autoFocus
+                />
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+                disabled={isLoading}
+                className={`w-full py-3 px-4 rounded-lg font-medium text-white ${
+                  isLoading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'
+                } transition-colors flex justify-center items-center`}
               >
-                Verify OTP
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Verifying... / सत्यापित करत आहे...
+                  </>
+                ) : (
+                  `Verify OTP / OTP सत्यापित करा`
+                )}
               </button>
+
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={resendDisabled}
+                  className={`text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center mx-auto ${
+                    resendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <FaRedo className="mr-2" />
+                  {resendDisabled ? 
+                    `Resend OTP in ${countdown}s / OTP पुन्हा पाठवा ${countdown}s मध्ये` : 
+                    "Resend OTP / OTP पुन्हा पाठवा"}
+                </button>
+              </div>
             </form>
           </>
         )}
