@@ -6,19 +6,30 @@ import bodyParser from "body-parser";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import path from "path";
 
 dotenv.config();
 
 const app = express();
+const __dirname = path.resolve();
 
 // Middleware
+
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // Frontend URL
-    methods: "GET,POST,PUT,DELETE",
+    origin: [
+      "http://localhost:5173",
+      "https://z82h75cv-5173.inc1.devtunnels.ms",
+      
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
+
+
+
 app.use(bodyParser.json());
 app.use(cookieParser());
 
@@ -26,6 +37,8 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 
 app.use("/api/user", userRoutes );
+
+
 
 
 // Connect to DB

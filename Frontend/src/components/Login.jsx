@@ -15,6 +15,27 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
+useEffect(() => {
+  const checkToken = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return; // No token, go to login
+
+    try {
+      // Try hitting a protected endpoint
+      const res = await API.get("/auth/check-token", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data?.valid) {
+        navigate("/home"); // Token is valid → skip login
+      }
+    } catch {
+      localStorage.removeItem("token"); // Token expired or invalid
+    }
+  };
+
+  checkToken();
+}, [navigate]);
 
   // Clear OTP field when step changes
   useEffect(() => {
@@ -64,26 +85,32 @@ export default function Login() {
     }
   };
 
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const res = await API.post("/auth/verify-login-otp", { userId, otp });
-      localStorage.setItem("token", res.data.token);
-      toast.success("Login successful! / लॉगिन यशस्वी!", {
-        position: "top-center",
-        autoClose: 3000,
-        onClose: () => navigate("/home"),
-      });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "OTP verification failed / OTP सत्यापन अयशस्वी", {
-        position: "top-center",
-        autoClose: 5000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const handleVerifyOTP = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
+  try {
+    const res = await API.post("/auth/verify-login-otp", { userId, otp });
+    
+    // Save token locally
+    localStorage.setItem("token", res.data.token);
+    
+    toast.success("Login successful! / लॉगिन यशस्वी!", {
+      position: "top-center",
+      autoClose: 3000,
+    });
+
+    // Navigate to home page
+    navigate("/home");
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || "OTP verification failed / OTP सत्यापन अयशस्वी",
+      { position: "top-center", autoClose: 5000 }
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleResendOTP = async () => {
     try {

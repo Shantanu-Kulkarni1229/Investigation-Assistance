@@ -111,11 +111,11 @@ export const verifyLoginOTP = async (req, res) => {
     user.otpExpires = null;
     await user.save();
 
-    // Generate JWT
+    // Generate JWT valid for 24 hours
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
     res.status(200).json({
@@ -130,26 +130,35 @@ export const verifyLoginOTP = async (req, res) => {
 };
 
 
+
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, token } = req.body;
 
-    // Check if user exists
+    // If token is provided and valid, skip OTP
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return res.status(200).json({
+          success: true,
+          message: "Already logged in with valid token",
+          token,
+        });
+      } catch {
+        // token invalid -> continue normal OTP process
+      }
+    }
+
+    // Normal login + OTP flow
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
-    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 min
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
     const htmlContent = generateOTPEmail(otp);
@@ -157,7 +166,7 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Login successful. OTP sent to your email for verification.",
+      message: "OTP sent to your email",
       userId: user._id,
     });
   } catch (error) {
@@ -165,6 +174,7 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Server error during login" });
   }
 };
+
 
 
 /**
@@ -266,3 +276,17 @@ const generateOTPEmail = (otp) => `
     </div>
   </div>
 `;
+
+// Logout Controller (JWT)
+export const logout = (req, res) => {
+    try {
+        // Simply instruct the client to delete token
+        // Invalidate token on client side (e.g., remove from localStorage or cookies)
+        res.clearCookie('token'); // If token is stored in cookies
+        return res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Logout failed', error: error.message });
+    }
+};
+
+

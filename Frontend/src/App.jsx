@@ -2,49 +2,53 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import { useEffect, useState } from "react";
 import Signup from "./components/Signup";
 import Login from "./components/Login";
-import Profile from "./components/Profile";
 import ForgotPassword from "./components/ForgotPassword";
 import HomePage from "./Pages/HomePage";
 
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const location = useLocation();
 
+  // ✅ Check auth dynamically
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token); // ✅ true if token exists
-  }, []);
+    setIsAuthenticated(!!token);
+  }, [location]);
+
+  // ✅ Show/Hide Botpress widget based on route
+  useEffect(() => {
+    const widget = document.getElementById("bp-web-widget");
+    if (widget) {
+      widget.style.display = location.pathname === "/home" ? "block" : "none";
+    }
+  }, [location]);
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-100">
-       
+    <div className="min-h-screen bg-gray-100">
+      <Routes>
+        {/* Default Route */}
+        <Route path="/" element={<Navigate to="/signup" />} />
 
-        <Routes>
-          {/* Default Route */}
-          <Route path="/" element={<Navigate to="/signup" />} />
+        {/* Authentication Routes */}
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Authentication Routes */}
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          {/* Pages Routes */}
-          
-
-          {/* Protected Profile Route */}
-          <Route
-            path="/profile"
-            element={isAuthenticated ? <Profile /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/home"
-            element={isAuthenticated ? <HomePage /> : <Navigate to="/login" />}
-          />
-        </Routes>
-      </div>
-    </Router>
+        {/* Protected Routes */}
+        
+        <Route
+          path="/home"
+          element={isAuthenticated ? <HomePage /> : <Navigate to="/login" />}
+        />
+      </Routes>
+    </div>
   );
 }
 
-export default App;
+export default function AppWrapper() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}
