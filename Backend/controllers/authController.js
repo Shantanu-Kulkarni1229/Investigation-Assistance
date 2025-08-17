@@ -280,8 +280,7 @@ const generateOTPEmail = (otp) => `
 // Logout Controller (JWT)
 export const logout = (req, res) => {
     try {
-        // Simply instruct the client to delete token
-        // Invalidate token on client side (e.g., remove from localStorage or cookies)
+        //
         res.clearCookie('token'); // If token is stored in cookies
         return res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
