@@ -71,12 +71,12 @@ useEffect(() => {
       const res = await API.post("/auth/login", form);
       setUserId(res.data.userId);
       setStep(2);
-      toast.success("OTP sent to your email! / OTP तुमच्या ईमेलवर पाठवला आहे!", {
+      toast.success("OTP sent to your email!\n(OTP तुमच्या ईमेलवर पाठवला आहे!)", {
         position: "top-center",
         autoClose: 5000,
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed / लॉगिन अयशस्वी", {
+      toast.error(error.response?.data?.message || "Login failed\n(लॉगिन अयशस्वी)", {
         position: "top-center",
         autoClose: 5000,
       });
@@ -94,7 +94,7 @@ const handleVerifyOTP = async (e) => {
     // Save token locally
     localStorage.setItem("token", res.data.token);
     
-    toast.success("Login successful! / लॉगिन यशस्वी!", {
+    toast.success("Login successful!\n(लॉगिन यशस्वी!)", {
       position: "top-center",
       autoClose: 3000,
     });
@@ -103,7 +103,7 @@ const handleVerifyOTP = async (e) => {
     navigate("/home");
   } catch (error) {
     toast.error(
-      error.response?.data?.message || "OTP verification failed / OTP सत्यापन अयशस्वी",
+      error.response?.data?.message || "OTP verification failed\n(OTP सत्यापन अयशस्वी)",
       { position: "top-center", autoClose: 5000 }
     );
   } finally {
@@ -116,12 +116,12 @@ const handleVerifyOTP = async (e) => {
     try {
       await API.post("/auth/login", form); // Same endpoint as initial login
       startCountdown();
-      toast.success("New OTP sent! / नवीन OTP पाठवला आहे!", {
+      toast.success("New OTP sent!\n(नवीन OTP पाठवला आहे!)", {
         position: "top-center",
         autoClose: 5000,
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to resend OTP / OTP पुन्हा पाठवणे अयशस्वी", {
+      toast.error(error.response?.data?.message || "Failed to resend OTP\n(OTP पुन्हा पाठवणे अयशस्वी)", {
         position: "top-center",
         autoClose: 5000,
       });
@@ -137,14 +137,18 @@ const handleVerifyOTP = async (e) => {
           <div className="mx-auto w-24 h-24 mb-3">
             <img src={Logo} alt="Maharashtra Police Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Maharashtra Police / महाराष्ट्र पोलीस</h1>
-          <p className="text-blue-600 font-medium">Investigation Assistant / चौकशी सहाय्यक</p>
+          <h1 className="text-2xl font-bold text-gray-800">Maharashtra Police</h1>
+          <p className="text-lg font-medium text-gray-700">(महाराष्ट्र पोलीस)</p>
+          <p className="text-blue-600 font-medium mt-2">Investigation Assistant</p>
+          <p className="text-blue-500 text-sm">(चौकशी सहाय्यक)</p>
         </div>
 
         {step === 1 && (
           <>
             <h2 className="text-xl font-bold mb-6 text-center text-gray-700">
-              Login / लॉगिन
+              Login
+              <br />
+              <span className="text-lg">(लॉगिन)</span>
             </h2>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative">
@@ -154,7 +158,7 @@ const handleVerifyOTP = async (e) => {
                 <input
                   type="email"
                   name="email"
-                  placeholder="Email / ईमेल"
+                  placeholder="Email (ईमेल)"
                   value={form.email}
                   onChange={handleChange}
                   className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -170,7 +174,7 @@ const handleVerifyOTP = async (e) => {
                 <input
                   type="password"
                   name="password"
-                  placeholder="Password / पासवर्ड"
+                  placeholder="Password (पासवर्ड)"
                   value={form.password}
                   onChange={handleChange}
                   className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -191,26 +195,37 @@ const handleVerifyOTP = async (e) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Processing... / प्रक्रिया करत आहे...
+                    Processing...
+                    <br />
+                    <span className="text-sm">(प्रक्रिया करत आहे...)</span>
                   </>
                 ) : (
-                  `Login / लॉगिन`
+                  <>
+                    Login
+                    <br />
+                    <span className="text-sm">(लॉगिन)</span>
+                  </>
                 )}
               </button>
             </form>
 
             <div className="mt-4 text-center space-y-3">
               <p className="text-gray-600">
-                Don't have an account? / खाते नाही?{" "}
+                Don't have an account?
+                <br />
+                <span className="text-sm">(खाते नाही?)</span>
+                <br />
                 <Link to="/signup" className="text-blue-600 hover:text-blue-800 font-medium">
-                  Sign Up / नोंदणी करा
+                  Sign Up (नोंदणी करा)
                 </Link>
               </p>
               <Link
                 to="/forgot-password"
-                className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm block"
               >
-                Forgot Password? / पासवर्ड विसरलात?
+                Forgot Password?
+                <br />
+                <span className="text-xs">(पासवर्ड विसरलात?)</span>
               </Link>
             </div>
           </>
@@ -222,14 +237,18 @@ const handleVerifyOTP = async (e) => {
               onClick={() => setStep(1)}
               className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
             >
-              <FaArrowLeft className="mr-1" /> Back / मागे
+              <FaArrowLeft className="mr-1" /> Back (मागे)
             </button>
             
             <h2 className="text-xl font-bold mb-6 text-center text-gray-700">
-              Verify OTP / OTP सत्यापित करा
+              Verify OTP
+              <br />
+              <span className="text-lg">(OTP सत्यापित करा)</span>
             </h2>
             <p className="text-gray-600 text-center mb-6">
-              Enter the OTP sent to your email / तुमच्या ईमेलवर पाठवलेला OTP प्रविष्ट करा
+              Enter the OTP sent to your email
+              <br />
+              <span className="text-sm">(तुमच्या ईमेलवर पाठवलेला OTP प्रविष्ट करा)</span>
             </p>
             
             <form onSubmit={handleVerifyOTP} className="space-y-4">
@@ -239,7 +258,7 @@ const handleVerifyOTP = async (e) => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Enter OTP / OTP प्रविष्ट करा"
+                  placeholder="Enter OTP (OTP प्रविष्ट करा)"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -261,10 +280,16 @@ const handleVerifyOTP = async (e) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Verifying... / सत्यापित करत आहे...
+                    Verifying...
+                    <br />
+                    <span className="text-sm">(सत्यापित करत आहे...)</span>
                   </>
                 ) : (
-                  `Verify OTP / OTP सत्यापित करा`
+                  <>
+                    Verify OTP
+                    <br />
+                    <span className="text-sm">(OTP सत्यापित करा)</span>
+                  </>
                 )}
               </button>
 
@@ -273,14 +298,21 @@ const handleVerifyOTP = async (e) => {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={resendDisabled}
-                  className={`text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center mx-auto ${
+                  className={`text-blue-600 hover:text-blue-800 font-medium flex flex-col items-center justify-center mx-auto ${
                     resendDisabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  <FaRedo className="mr-2" />
-                  {resendDisabled ? 
-                    `Resend OTP in ${countdown}s / OTP पुन्हा पाठवा ${countdown}s मध्ये` : 
-                    "Resend OTP / OTP पुन्हा पाठवा"}
+                  <div className="flex items-center">
+                    <FaRedo className="mr-2" />
+                    {resendDisabled ? 
+                      <>Resend OTP in {countdown}s</> : 
+                      <>Resend OTP</>}
+                  </div>
+                  <span className="text-sm">
+                    {resendDisabled ? 
+                      <>(OTP पुन्हा पाठवा {countdown}s मध्ये)</> : 
+                      <>(OTP पुन्हा पाठवा)</>}
+                  </span>
                 </button>
               </div>
             </form>
