@@ -12,20 +12,45 @@ const otpStore = new Map();
  */
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { 
+      name, 
+      email, 
+      password, 
+      phoneNumber, 
+      district, 
+      taluka, 
+      policeStation 
+    } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Validate required fields
+    if (!name || !email || !password || !phoneNumber || !district || !taluka || !policeStation) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if user already exists by email OR phone
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { phoneNumber }] 
+    });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User with this email or phone already exists" });
     }
 
     // Always generate a NEW OTP and overwrite old if exists
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
 
-    // Save or update entry in otpStore
-    otpStore.set(email, { name, password, otp, expiresAt });
+    // Store in temporary otpStore until verification
+    otpStore.set(email, { 
+      name, 
+      email,
+      password, 
+      phoneNumber, 
+      district, 
+      taluka, 
+      policeStation,
+      otp, 
+      expiresAt 
+    });
 
     // Send OTP via email
     const htmlContent = generateOTPEmail(otp);
@@ -42,14 +67,7 @@ export const signup = async (req, res) => {
 };
 
 
-/**
- * @desc Verify OTP
- * @route POST /api/auth/verify-otp
- */
-/**
- * @desc Verify Signup OTP
- * @route POST /api/auth/verify-signup-otp
- */
+
 export const verifySignupOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -68,11 +86,24 @@ export const verifySignupOTP = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
+    // Check for all required fields
+    const requiredFields = ["name", "email", "password", "phoneNumber", "district", "taluka", "policeStation"];
+    for (const field of requiredFields) {
+      if (!record[field]) {
+        console.error(`❌ Missing field in OTP record: ${field}`);
+        return res.status(400).json({ message: `Missing field: ${field}` });
+      }
+    }
+
     // Create user now
     const user = await User.create({
       name: record.name,
       email,
       password: record.password,
+      phoneNumber: record.phoneNumber,
+      district: record.district,
+      taluka: record.taluka,
+      policeStation: record.policeStation,
       isVerified: true,
     });
 
@@ -91,10 +122,7 @@ export const verifySignupOTP = async (req, res) => {
 };
 
 
-/**
- * @desc Verify Login OTP and return JWT
- * @route POST /api/auth/verify-login-otp
- */
+
 export const verifyLoginOTP = async (req, res) => {
   try {
     const { userId, otp } = req.body;
@@ -131,6 +159,7 @@ export const verifyLoginOTP = async (req, res) => {
 
 
 
+
 export const login = async (req, res) => {
   try {
     const { email, password, token } = req.body;
@@ -139,6 +168,18 @@ export const login = async (req, res) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Update login tracking for token reuse
+        const user = await User.findById(decoded.id);
+        if (user) {
+          user.lastLogin = new Date();
+          user.loginHistory.push({
+            timestamp: new Date(),
+            ip: req.ip || req.connection.remoteAddress,
+          });
+          await user.save();
+        }
+
         return res.status(200).json({
           success: true,
           message: "Already logged in with valid token",
@@ -153,9 +194,17 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.matchPassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
+    // Record login activity
+    user.lastLogin = new Date();
+    user.loginHistory.push({
+      timestamp: new Date(),
+      ip: req.ip || req.connection.remoteAddress,
+    });
+
+    // Generate OTP for login verification
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpires = Date.now() + 10 * 60 * 1000;
@@ -241,14 +290,21 @@ export const verifyForgotOTP = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
+    console.log("Incoming body:", req.body);
+
+    if (!userId || !newPassword) {
+      return res.status(400).json({ message: "userId and newPassword are required" });
+    }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    // If you have pre-save hook → skip hashing manually
+user.password = newPassword; // plain
+
     user.otp = null;
     user.otpExpires = null;
+
     await user.save();
 
     res.status(200).json({
@@ -278,14 +334,30 @@ const generateOTPEmail = (otp) => `
 `;
 
 // Logout Controller (JWT)
-export const logout = (req, res) => {
-    try {
-        //
-        res.clearCookie('token'); // If token is stored in cookies
-        return res.status(200).json({ message: 'Logged out successfully' });
-    } catch (error) {
-        return res.status(500).json({ message: 'Logout failed', error: error.message });
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user?.id; // assuming you set user in req via middleware
+
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        user.lastLogout = new Date();
+        user.logoutHistory.push({
+          timestamp: new Date(),
+          ip: req.ip || req.connection.remoteAddress,
+        });
+        // Increment logoutCount or initialize if not present
+        user.logoutCount = (user.logoutCount || 0) + 1;
+        await user.save();
+      }
     }
+
+    res.clearCookie("token"); // If token is stored in cookies
+    return res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("❌ Logout Error:", error);
+    return res.status(500).json({ message: "Logout failed", error: error.message });
+  }
 };
 
 

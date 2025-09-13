@@ -24,6 +24,27 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: 6,
     },
+    phoneNumber: {
+      type: String,
+      required: [true, "Phone number is required"],
+      unique: true,
+      match: [/^\d{10}$/, "Please provide a valid 10-digit phone number"],
+    },
+    district: {
+      type: String,
+      required: [true, "District is required"],
+      trim: true,
+    },
+    taluka: {
+      type: String,
+      required: [true, "Taluka is required"],
+      trim: true,
+    },
+    policeStation: {
+      type: String,
+      required: [true, "Police Station is required"],
+      trim: true,
+    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -36,8 +57,36 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    registeredAt: {
+      type: Date,
+      default: Date.now,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    loginHistory: [
+      {
+        timestamp: { type: Date, default: Date.now },
+        ip: { type: String, default: null },
+      },
+    ],
+    lastLogout: {
+      type: Date,
+      default: null,
+    },
+    logoutHistory: [
+      {
+        timestamp: { type: Date, default: Date.now },
+        ip: { type: String, default: null },
+      },
+    ],
+     logoutCount: {
+      type: Number,
+      default: 0,
+    },
   },
-  { timestamps: true }
+  { timestamps: true } // gives createdAt & updatedAt automatically
 );
 
 // Hash password before saving

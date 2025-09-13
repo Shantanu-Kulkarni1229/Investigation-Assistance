@@ -1,21 +1,40 @@
 import { useState, useEffect } from "react";
 import API from "../api";
 import { useNavigate, Link } from "react-router-dom";
-import { FaUserShield, FaEnvelope, FaLock, FaKey, FaArrowLeft, FaCheck, FaTimes, FaRedo } from "react-icons/fa";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import {
+  FaUserShield,
+  FaEnvelope,
+  FaLock,
+  FaKey,
+  FaArrowLeft,
+  FaCheck,
+  FaTimes,
+  FaRedo,
+  FaPhone,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Logo from "../assets/logo.png";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    phoneNumber: "",
+    district: "",
+    taluka: "",
+    policeStation: "",
+  });
   const [userId, setUserId] = useState(null);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
-  
+
   const [passwordChecks, setPasswordChecks] = useState({
     minLength: false,
     hasNumber: false,
@@ -49,7 +68,7 @@ export default function Signup() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    
+
     if (name === "password") {
       setPasswordChecks({
         minLength: value.length >= 8,
@@ -72,10 +91,13 @@ export default function Signup() {
         autoClose: 5000,
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Signup failed\n(नोंदणी अयशस्वी)", {
-        position: "top-center",
-        autoClose: 5000,
-      });
+      toast.error(
+        error.response?.data?.message || "Signup failed\n(नोंदणी अयशस्वी)",
+        {
+          position: "top-center",
+          autoClose: 5000,
+        }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -86,17 +108,23 @@ export default function Signup() {
     setIsLoading(true);
     try {
       await API.post("/auth/verify-signup-otp", { email: form.email, otp });
-      toast.success("Signup successful! You can now log in.\n(नोंदणी यशस्वी! आता तुम्ही लॉगिन करू शकता.)", {
-        position: "top-center",
-        autoClose: 2000,
-        onClose: () => navigate("/login"),
-      });
+      toast.success(
+        "Signup successful! You can now log in.\n(नोंदणी यशस्वी! आता तुम्ही लॉगिन करू शकता.)",
+        {
+          position: "top-center",
+          autoClose: 2000,
+          onClose: () => navigate("/login"),
+        }
+      );
     } catch (error) {
-      console.error("OTP Error:", error.response?.data);
-      toast.error(error.response?.data?.message || "OTP verification failed\n(OTP सत्यापन अयशस्वी)", {
-        position: "top-center",
-        autoClose: 5000,
-      });
+      toast.error(
+        error.response?.data?.message ||
+          "OTP verification failed\n(OTP सत्यापन अयशस्वी)",
+        {
+          position: "top-center",
+          autoClose: 5000,
+        }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -104,17 +132,21 @@ export default function Signup() {
 
   const handleResendOTP = async () => {
     try {
-      await API.post("/auth/signup", form); // Same endpoint as initial signup
+      await API.post("/auth/signup", form); // resend OTP
       startCountdown();
       toast.success("New OTP sent!\n(नवीन OTP पाठवला आहे!)", {
         position: "top-center",
         autoClose: 5000,
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to resend OTP\n(OTP पुन्हा पाठवणे अयशस्वी)", {
-        position: "top-center",
-        autoClose: 5000,
-      });
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to resend OTP\n(OTP पुन्हा पाठवणे अयशस्वी)",
+        {
+          position: "top-center",
+          autoClose: 5000,
+        }
+      );
     }
   };
 
@@ -127,7 +159,11 @@ export default function Signup() {
         {/* Logo/Header */}
         <div className="text-center mb-6">
           <div className="mx-auto w-24 h-24 mb-3">
-            <img src={Logo} alt="Maharashtra Police Logo" className="w-full h-full object-contain" />
+            <img
+              src={Logo}
+              alt="Maharashtra Police Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Maharashtra Police</h1>
           <p className="text-lg font-medium text-gray-700">(महाराष्ट्र पोलीस)</p>
@@ -143,111 +179,173 @@ export default function Signup() {
               <span className="text-lg">(खाते तयार करा)</span>
             </h2>
             <form onSubmit={handleSignup} className="space-y-4">
+              {/* Name */}
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUserShield className="text-gray-400" />
-                </div>
+                <FaUserShield className="absolute left-3 top-3 text-gray-400" />
                 <input
                   type="text"
                   name="name"
                   placeholder="Full Name (पूर्ण नाव)"
                   value={form.name}
                   onChange={handleChange}
-                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
                   required
                 />
               </div>
 
+              {/* Email */}
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaEnvelope className="text-gray-400" />
-                </div>
+                <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
                 <input
                   type="email"
                   name="email"
                   placeholder="Email (ईमेल)"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
                   required
                 />
               </div>
 
+              {/* Phone Number */}
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaLock className="text-gray-400" />
-                </div>
+                <FaPhone className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="phoneNumber"
+                  placeholder="Phone Number (फोन नंबर)"
+                  value={form.phoneNumber}
+                  onChange={handleChange}
+                  pattern="\d{10}"
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* District */}
+              <div className="relative">
+                <FaMapMarkerAlt className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="district"
+                  placeholder="District (जिल्हा)"
+                  value={form.district}
+                  onChange={handleChange}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Taluka */}
+              <div className="relative">
+                <FaMapMarkerAlt className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="taluka"
+                  placeholder="Taluka (तालुका)"
+                  value={form.taluka}
+                  onChange={handleChange}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Police Station */}
+              <div className="relative">
+                <FaMapMarkerAlt className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  name="policeStation"
+                  placeholder="Police Station (पोलीस स्टेशन)"
+                  value={form.policeStation}
+                  onChange={handleChange}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+
+              {/* Password */}
+              <div className="relative">
+                <FaLock className="absolute left-3 top-3 text-gray-400" />
                 <input
                   type="password"
                   name="password"
                   placeholder="Password (पासवर्ड)"
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
                   required
                 />
               </div>
 
-              {/* Password requirements */}
+              {/* Password Requirements */}
               <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm font-medium mb-2">Password Requirements
-                  <br />
+                <p className="text-sm font-medium mb-2">
+                  Password Requirements <br />
                   <span className="text-xs">(पासवर्ड आवश्यकता)</span>
                 </p>
                 <ul className="text-xs space-y-1">
-                  <li className={`flex items-center ${passwordChecks.minLength ? 'text-green-600' : 'text-gray-500'}`}>
-                    {passwordChecks.minLength ? <FaCheck className="mr-1" /> : <FaTimes className="mr-1" />}
-                    Minimum 8 characters (किमान 8 वर्ण)
+                  <li
+                    className={`flex items-center ${
+                      passwordChecks.minLength ? "text-green-600" : "text-gray-500"
+                    }`}
+                  >
+                    {passwordChecks.minLength ? <FaCheck /> : <FaTimes />}
+                    <span className="ml-1">Minimum 8 characters (किमान 8 वर्ण)</span>
                   </li>
-                  <li className={`flex items-center ${passwordChecks.hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
-                    {passwordChecks.hasNumber ? <FaCheck className="mr-1" /> : <FaTimes className="mr-1" />}
-                    At least one number (किमान एक संख्या)
+                  <li
+                    className={`flex items-center ${
+                      passwordChecks.hasNumber ? "text-green-600" : "text-gray-500"
+                    }`}
+                  >
+                    {passwordChecks.hasNumber ? <FaCheck /> : <FaTimes />}
+                    <span className="ml-1">At least one number (किमान एक संख्या)</span>
                   </li>
-                  <li className={`flex items-center ${passwordChecks.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
-                    {passwordChecks.hasSpecialChar ? <FaCheck className="mr-1" /> : <FaTimes className="mr-1" />}
-                    At least one special character (किमान एक विशेष वर्ण)
+                  <li
+                    className={`flex items-center ${
+                      passwordChecks.hasSpecialChar
+                        ? "text-green-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {passwordChecks.hasSpecialChar ? <FaCheck /> : <FaTimes />}
+                    <span className="ml-1">
+                      At least one special character (किमान एक विशेष वर्ण)
+                    </span>
                   </li>
-                  <li className={`flex items-center ${passwordChecks.hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
-                    {passwordChecks.hasUpperCase ? <FaCheck className="mr-1" /> : <FaTimes className="mr-1" />}
-                    At least one uppercase letter (किमान एक मोठे अक्षर)
+                  <li
+                    className={`flex items-center ${
+                      passwordChecks.hasUpperCase
+                        ? "text-green-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {passwordChecks.hasUpperCase ? <FaCheck /> : <FaTimes />}
+                    <span className="ml-1">
+                      At least one uppercase letter (किमान एक मोठे अक्षर)
+                    </span>
                   </li>
                 </ul>
               </div>
 
-                <button
+              {/* Submit */}
+              <button
                 type="submit"
                 disabled={isLoading || !isPasswordValid}
                 className={`w-full py-3 px-4 rounded-lg font-medium text-white ${
-                  isLoading || !isPasswordValid ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                } transition-colors flex justify-center items-center`}
+                  isLoading || !isPasswordValid
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
               >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                    <br />
-                    <span className="text-sm">(प्रक्रिया करत आहे...)</span>
-                  </>
-                ) : (
-                  <>
-                    Sign Up
-                    <br />
-                    <span className="text-sm">(नोंदणी करा)</span>
-                  </>
-                )}
+                {isLoading ? "Processing..." : "Sign Up (नोंदणी करा)"}
               </button>
             </form>
 
             <div className="mt-4 text-center">
               <p className="text-gray-600">
-                Already have an account?
-                <br />
-                <span className="text-sm">(आधीपासून खाते आहे?)</span>
-                <br />
-                <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+                Already have an account? <br />
+                <Link to="/login" className="text-blue-600 font-medium">
                   Login here (येथे लॉगिन करा)
                 </Link>
               </p>
@@ -255,6 +353,7 @@ export default function Signup() {
           </>
         )}
 
+        {/* Step 2 - OTP Verification stays same */}
         {step === 2 && (
           <>
             <button
@@ -263,58 +362,31 @@ export default function Signup() {
             >
               <FaArrowLeft className="mr-1" /> Back (मागे)
             </button>
-            
+
             <h2 className="text-xl font-bold mb-6 text-center text-gray-700">
-              Verify Your Email
-              <br />
+              Verify Your Email <br />
               <span className="text-lg">(तुमचा ईमेल सत्यापित करा)</span>
             </h2>
-            <p className="text-gray-600 text-center mb-6">
-              We've sent an OTP to your email. Please enter it below.
-              <br />
-              <span className="text-sm">(आम्ही तुमच्या ईमेलवर OTP पाठवला आहे. कृपया ते खाली प्रविष्ट करा.)</span>
-            </p>
-            
+
             <form onSubmit={handleVerifyOTP} className="space-y-4">
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaKey className="text-gray-400" />
-                </div>
+                <FaKey className="absolute left-3 top-3 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Enter OTP (OTP प्रविष्ट करा)"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-lg"
                   required
-                  autoFocus
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-lg font-medium text-white ${
-                  isLoading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'
-                } transition-colors flex justify-center items-center`}
+                className="w-full py-3 px-4 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700"
               >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Verifying...
-                    <br />
-                    <span className="text-sm">(सत्यापित करत आहे...)</span>
-                  </>
-                ) : (
-                  <>
-                    Verify OTP
-                    <br />
-                    <span className="text-sm">(OTP सत्यापित करा)</span>
-                  </>
-                )}
+                {isLoading ? "Verifying..." : "Verify OTP (OTP सत्यापित करा)"}
               </button>
 
               <div className="text-center mt-4">
@@ -322,14 +394,11 @@ export default function Signup() {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={resendDisabled}
-                  className={`text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center mx-auto ${
-                    resendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  className="text-blue-600 font-medium"
                 >
-                  <FaRedo className="mr-2" />
-                  {resendDisabled ? 
-                    <>Resend OTP in {countdown}s<br /><span className="text-sm">(OTP पुन्हा पाठवा {countdown}s मध्ये)</span></> : 
-                    <>Resend OTP<br /><span className="text-sm">(OTP पुन्हा पाठवा)</span></>}
+                  {resendDisabled
+                    ? `Resend OTP in ${countdown}s`
+                    : "Resend OTP (OTP पुन्हा पाठवा)"}
                 </button>
               </div>
             </form>

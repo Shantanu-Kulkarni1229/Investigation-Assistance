@@ -4,18 +4,25 @@ import Signup from "./components/Signup";
 import Login from "./components/Login";
 import ForgotPassword from "./components/ForgotPassword";
 import HomePage from "./Pages/HomePage";
+import AdminLogin from "./admin/AdminLogin";
+
+import AdminDashboard from "./admin/AdminDashboard";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const location = useLocation();
 
-  // ✅ Check auth dynamically
+  // ✅ Check normal user auth
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
+
+    const adminToken = localStorage.getItem("adminToken");
+    setIsAdminAuthenticated(!!adminToken);
   }, [location]);
 
-  // ✅ Show/Hide Botpress widget based on route
+  // ✅ Show/Hide Botpress widget on /home only
   useEffect(() => {
     const widget = document.getElementById("bp-web-widget");
     if (widget) {
@@ -29,17 +36,25 @@ function App() {
         {/* Default Route */}
         <Route path="/" element={<Navigate to="/signup" />} />
 
-        {/* Authentication Routes */}
+        {/* User Auth Routes */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Protected Routes */}
-        
+        {/* User Protected Route */}
         <Route
           path="/home"
           element={isAuthenticated ? <HomePage /> : <Navigate to="/login" />}
         />
+
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/dashboard"
+          element={isAdminAuthenticated ? <AdminDashboard /> : <Navigate to="/admin/login" />}
+        />
+       
+
       </Routes>
     </div>
   );

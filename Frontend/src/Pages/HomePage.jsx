@@ -144,19 +144,19 @@ const Homepage = () => {
     setShowTypingPanel(false);
   };
  
-  const handleLogout = async () => {
-    try {
-      const res = await API.post("auth/logout");
-
-      if (res.status === 200) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      }
-    } catch (error) {
-      console.error("Logout failed:", error.response?.data || error.message);
-      alert("Logout failed. Please try again.");
+const handleLogout = async () => {
+  try {
+    const res = await API.post("auth/logout"); // <-- API call
+    if (res.status === 200) {
+      localStorage.removeItem("token");        // clear JWT
+      window.location.href = "/login";         // redirect
     }
-  };
+  } catch (error) {
+    console.error("Logout failed:", error.response?.data || error.message);
+    alert("Logout failed. Please try again.");
+  }
+};
+
 
   useEffect(() => {
     return () => {
@@ -220,6 +220,7 @@ const Homepage = () => {
       {/* Chatbot iframe */}
       <iframe
         src="https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/06/18/20250806183435-8IZ9LGKM.json"
+        // https://cdn.botpress.cloud/webchat/v3.2/shareable.html?configUrl=https://files.bpcontent.cloud/2025/08/06/18/20250806183435-8IZ9LGKM.json
         frameBorder="0"
         style={{
           width: "100%",
