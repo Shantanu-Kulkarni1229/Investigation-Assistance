@@ -1,0 +1,3 @@
+[submodule "MOB-Application"]
+	path = MOB-Application
+	url = https://github.com/Shantanu-Kulkarni1229/MOB-Application.git
